@@ -164,7 +164,7 @@ class ArabStockMetadataGenerator:
         """Test OpenAI API connection"""
         try:
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4-1106-preview",
                 messages=[{"role": "user", "content": "test"}],
                 max_token=5
             )
@@ -221,3 +221,91 @@ class ArabStockMetadataGenerator:
                 ],
                 max_tokens=300
             )
+
+            content = response.choices[0].message.content
+            # Try to extract JSON from response
+            try:
+                analysis = json.loads(content)
+            except:
+                # If not valid JSON, create structure response from text
+                analysis = self._parse_text_analysis(content)
+
+        except Exception as e:
+            print(f"OpenAI analysis error: {e}")
+            return self._get_fallback_analysis()
+
+    def _analyze_with_gemini(self, image_data: str) -> Dict:
+        """Analyze image using Gemini Vision API"""
+        try:
+            # Convert base64 to PIL Image for gemini
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+
+            model = genai.GenerativeModel('gemini-pro-vision')
+
+            prompt = """Analyze this image for stock photography metadata for Arab/Middle Eastern markets.
+            Describe: main subject, people, objects, setting, mood, colors, style, cultural context.
+            Format as JSON: {"main_subject": "", "people": [], "objects": [], "setting": "", "mood": "", "colors": [], "style": "", "cultural_context": ""}"""
+
+            response = model.generate_content([prompt, image])
+
+            # Try to extract JSON from response
+            try:
+                content = response.text
+                # Look for JSON in the response
+                start = content.find('{')
+                end = content.rfind('}') + 1
+                if start != -1 and end != 0:
+                    json_str = content[start:end]
+                    analysis = json.loads(json_str)
+                else:
+                    analysis = self._parse_text_analysis(content)
+            except:
+                analysis = self._parse_text_analysis(response.text)
+
+            return analysis
+
+        except Exception as e:
+            print(f"Gemini analysis error: {e}")
+            return self._get_fallback_analysis()
+
+    def _analyze_offline(self, image_data: str) -> Dict:
+        """Offline analysis using basic image processing"""
+        try:
+            # Convert base64 to PIL image
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+
+            # Basic image analysis
+            width, height = image.size
+            aspect_ratio = width / height
+
+            # Determine likely content based on aspect ratio and size
+            if aspect_ratio >1.5:
+                setting = "landscape or panoramic view"
+                main_subject = "wide scene"
+            elif aspect_ratio < 0.7:
+                setting = "portrait or vertical composition"
+                main_subject = "peson or tall subject"
+            else:
+                setting = "standard composition"
+                main_subject = "balanced scene"
+
+            # Get dominant colors (simplified)
+            image_rgb = im,age.convert('RGB')
+            colors = ['blue', 'red', 'green', 'yelllow', 'white', 'black'] # Simplified
+
+            return {
+                "main_subject": main_subject,
+                "people": ["person"],
+                "objects": ["general object"],
+                "setting": setting,
+                "mood": "professional",
+                "colors": random.sample(colors, 3),
+                "style": "modern",
+                "cultural_context": "arab business enviroment"
+            }
+
+        except Exception as e:
+            print(f"Offline analysis error: {e}")
+            return self._get_fallback_analysis()
