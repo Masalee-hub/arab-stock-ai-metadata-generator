@@ -292,7 +292,7 @@ class ArabStockMetadataGenerator:
                 main_subject = "balanced scene"
 
             # Get dominant colors (simplified)
-            image_rgb = im,age.convert('RGB')
+            image_rgb = image.convert('RGB')
             colors = ['blue', 'red', 'green', 'yelllow', 'white', 'black'] # Simplified
 
             return {
@@ -309,3 +309,183 @@ class ArabStockMetadataGenerator:
         except Exception as e:
             print(f"Offline analysis error: {e}")
             return self._get_fallback_analysis()
+
+    def _parse_text_analysis(self, text: str) -> Dict:
+        """Parse text analysis into structured format when, JSON parsing fails """
+        return {
+            "main_subject": "profesional scene",
+            "people": ["person", "profesional"],
+            "objects": ["business items"],
+            "setting": "modern enviroment",
+            "mood": "profesional",
+            "colors": ["blue", "white", "gray"],
+            "style": "contemporarty",
+            "cultural_context": "arab business setting"
+        }
+
+    def _get_fallback_analysis(self) -> Dict:
+        """Fallback analysis when AI service is unavailable"""
+        return {
+            "main_subject": "professional scene",
+            "people": ["person", "professional"],
+            "objects": ["business items"],
+            "setting": "modern environment",
+            "mood": "professional",
+            "colors": ["blue", "white", "gray"],
+            "style": "contemporary",
+            "cultural_context": "arab business setting"
+        }
+
+    def generate_titles(self, analysis: Dict) -> Dict[str, str]:
+        """Generated optimized titles in English and Arabic"""
+
+        # English title generation with AI-based analysis
+        main_subject = analysis.get("main_subject", "business scene")
+        setting = analysis.get("setting", "office")
+        cultural_context = analysis.get("cultural_context", "arab")
+
+        en_templates = [
+            f"Professional {main_subject} in Modern Arab {setting}",
+            f"Middle Eastern {main_subject} - Business Excellence",
+            f"Contemporary Arab {main_subject} in {setting}",
+            f"Guld Business - {main_subject} Success Story",
+            f"Islamic Culture - Modern {main_subject}",
+            f"Arab Professional {main_subject} Meeting",
+            f"Dubai Style {main_subject} in {setting}",
+            f"Saudi Business {main_subject} Innovation"
+        ]
+
+        # Arabic title generation
+        ar_templates = [
+            f"اجتماع أعمال عربي مهني في مكتب حديث",
+            f"التميز في الأعمال الشرق أوسطية - مشهد مهني",
+            f"ثقافة عربية معاصرة في بيئة العمل",
+            f"أعمال الخليج - قصة نجاح مهنية",
+            f"الثقافة الإسلامية - مشهد أعمال حديث",
+            f"اجتماع مهني عربي ناجح",
+            f"أسلوب دبي في الأعمال المهنية",
+            f"ابتكار الأعمال السعودية الحديث"
+        ]
+
+        en_title = random.choice(en_templates)
+        ar_title = random.choice(ar_templates)
+
+        return {
+            "en": en_title,
+            "ar": ar_title
+        }
+
+    def generate_keywords(self, analysis: Dict) -> Dict[str, List[str]]:
+        """Generate relevant keywords in both languages based on AI analysis"""
+
+        base_keywords_en = []
+        base_keywords_ar = []
+
+        # Extract keywords from analysis
+        main_subject = analysis.get("main_subject", "").lower()
+        people = analysis.get("people", [])
+        objects = analysis.get("objects", [])
+        setting = analysis.get("setting", "").lower()
+        mood = analysis.get("mood", "").lower()
+        cultural_context = analysis.get("cultural_context", "").lower()
+
+        # Add subject based keywords
+        if any(word in main_subject for word in ["business", "meeting", "professional"]):
+            base_keywords_en.extend(["business", "professional", "meeting", "office", "corporate", "teamwork"])
+            base_keywords_ar.extend(["تكنولوجيا", "رقمي", "ابتكار", "كمبيوتر", "تقني"])
+
+        if any(word in main_subject for word in ["technology", "computer", "digital"]):
+            base_keywords_en.extend(["technology", "digital", "innovation", "computer", "tech"])
+            base_keywords_ar.extend(["تكنولوجيا", "رقمي", "ابتكار", "كمبيوتر", "تقني"])
+
+        # add people-based keywords
+        if people:
+            base_keywords_en.extend(["people", "person", "team", "group", "professional"])
+            base_keywords_ar.extend(["أشخاص", "شخص", "فريق", "مجموعة", "مهني"])
+
+        # add cultural context keywords
+        if "arab" in cultural_context or "middle" in cultural_context:
+            base_keywords_en.extend(["Arab", "Middle Eastern", "Islamic", "Muslim", "Gulf"])
+            base_keywords_ar.extend(["عربي", "شرق أوسطي", "إسلامي", "مسلم", "خليجي"])
+
+        # add mood-based keywords
+        if "professional" in mood:
+            base_keywords_en.extend(["success", "achievement", "excellence"])
+            base_keywords_ar.extend(["نجاح", "إنجاز", "تميز"])
+
+        # add objects as keywords
+        base_keywords_en.extend([obj.lower() for obj in objects if isinstance(obj, str)])
+
+        # add colors and style
+        colors = analysis.get("colors", [])
+        base_keywords_en.extend(colors)
+
+        style = analysis.get("style", "")
+        if style:
+            base_keywords_en.append(style)
+
+        # add trending keywords for better performance
+        base_keywords_en.extend(random.sample(self.trending_keywords["en"], 5))
+        base_keywords_ar.extend(random.sample(self.trending_keywords["ar"], 5))
+
+        # Remove duplicates and limit
+        final_en = list(set([kw for kw in base_keywords_en if kw and len(kw) > 1]))[:30]
+        final_ar = list(set([kw for kw in base_keywords_ar if kw and len(kw) > 1]))[:30]
+
+        return {
+            "en": final_en,
+            "ar": final_ar
+        }
+
+    def suggest_category(self, analysis: Dict) -> Tuple[str, str]:
+        """Suggest the most appropriate category based on AI analysis"""
+
+        main_subject = analysis.get("main_subject", "").lower()
+        objects = [obj.lower() for obj in analysis.get("objects", []) if isinstance(obj, str)]
+        setting = analysis.get("setting", "").lower()
+        cultural_context = analysis.get("cultural_context", "").lower()
+
+        # Business category detection
+        if any(word in main_subject for word in ["business", "meeting", "professional", "office"]):
+            return "Business", "أعمال"
+
+        # People category detection
+        elif any(word in main_subject for word in ["people", "person", "family", "group"]):
+            return "People", "أشخاص"
+
+        # Technology category detection
+        elif any(word in main_subject + " ".join(objects) for word in ["technology", "computer", "digital", "tech", "laptop"]):
+            return "Technology", "تكنولوجيا"
+
+        # Culture category detection
+        elif any(word in cultural_context for word in ["culture", "traditional", "heritage", "islamic"]):
+            return "Culture", "ثقافة"
+
+        # Architecture category detection
+        elif any(word in setting for word in ["building", "architecture", "contruction", "city"]):
+            return "Architecture", "عمارة"
+
+        # Default to people category
+        else:
+            return "People", "أشخاص"
+
+    def determine_license_type(self, analysis: Dict) -> str:
+        """Determine if image should be commercial or editorial based on AI analysis"""
+
+        main_subject = analysis.get("main_subject", "").lower()
+        objects = [obj.lower() for obj in analysis.get ("objects", []) if isinstance(obj, str)]
+        setting = analysis.get("setting", "").lower()
+
+        # Editorial licence indicators
+        editorial_indicators = [
+            "news", "event", "celebrity", "politician", "protest", "demonstration",
+            "breaking news", "journalism", "reporter", "interview", "press conference"
+        ]
+
+        if any(indicator in main_subject + " ".join(objects) + setting for indicator in editorial_indicators):
+            return "editorial"
+        else:
+            return "commercial"
+
+
+
