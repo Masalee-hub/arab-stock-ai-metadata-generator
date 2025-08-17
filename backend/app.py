@@ -602,3 +602,76 @@ def test_provider():
             return jsonify({"error": "Provider name is required"}), 400
 
         generator = ArabStockMetadataGenerator()
+
+        # Test connection based on provider
+        if provider.lower() == "openai":
+            if api_key:
+                openai.api_key = api_key
+            success = generator._test_openai_connection()
+        elif provider.lower() == "gemini":
+            if api_key:
+                genai.configure((api_key=api_key))
+            success = generator._test_gemini_connection()
+        else:
+            success = True # Offline mode always works
+
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": f"{provider} connection {'successfully' if success else 'failed'}",
+            "provider": provider
+        }), 500
+
+@app.route('/api/translate', methods=['POST'])
+def translate_text():
+    """Translate text between English and Arabic"""
+
+    try:
+        data = request.json
+        text = data.get('text')
+        target_lang = data.get ('target_lang', 'ar')
+
+        if not text:
+            return jsonify({"error": "No text provided"}), 400
+
+        translator = Translator()
+
+        if target_lang == 'ar':
+            translated = translator.translate(text, dest='ar').text
+        else:
+            translated = translator.translate(text, dest='en').text
+
+        return jsonify({
+            "original": text,
+            "tranlated": translated,
+            "target_lang": target_lang
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/keywords/suggest', methods=['POST'])
+def suggest_more_keywords():
+    """Suggest additional keywords based on existing ones"""
+
+    try:
+        data = request.json
+        existing_keywords = data.get('keywords', [])
+        language = data.get('language', 'en')
+
+        generator = ArabStockMetadataGenerator
+
+        # Get trending keywords in specified language
+        suggestions = random.sample(
+            generator.trending_keywords[language],
+            min(10, len(generator.trending_keywords[language]))
+        )
+
+        # Filter out existing keywords
+        new_suggestions = [kw for kw in suggestions if kw not in existing_keywords]
+
+        return jsonify({
+            "suggestions": new_suggestions,
+            "language": language
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
