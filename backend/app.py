@@ -65,7 +65,7 @@ class ArabStockMetadataGenerator:
         # High-performing keywords for Arab markets
         self.trending_keywords = {
             "en": [
-                "Arab", "Middle East", "UAE", "Saudi Arabaia", "Qatar", "Dubai",
+                "Arab", "Middle East", "UAE", "Saudi Arabia", "Qatar", "Dubai",
                 "Islamic", "Muslim", "Gulf", "Traditional", "Modern", "Luxury",
                 "Business", "Professional", "Culture", "Heritage", "Family",
                 "Technology", "Innovation", "Education", "Youth", "Success"
@@ -210,7 +210,7 @@ class ArabStockMetadataGenerator:
                                 "text": """Analyze this image for stock photography metadata.
                                 Focus on: main subject, people, ibjects, setting, mood, 
                                 Return a JSON with: main_subject, people (array), object (array), setting, mood, colors (array), style, cultural_context.
-                                Keeo description concise and stock-photo appropriate."""
+                                Keep description concise and stock-photo appropriate."""
                             },
                             {
                                 "type": "image_url",
@@ -286,14 +286,14 @@ class ArabStockMetadataGenerator:
                 main_subject = "wide scene"
             elif aspect_ratio < 0.7:
                 setting = "portrait or vertical composition"
-                main_subject = "peson or tall subject"
+                main_subject = "person or tall subject"
             else:
                 setting = "standard composition"
                 main_subject = "balanced scene"
 
             # Get dominant colors (simplified)
             image_rgb = image.convert('RGB')
-            colors = ['blue', 'red', 'green', 'yelllow', 'white', 'black'] # Simplified
+            colors = ['blue', 'red', 'green', 'yellow', 'white', 'black'] # Simplified
 
             return {
                 "main_subject": main_subject,
@@ -313,13 +313,13 @@ class ArabStockMetadataGenerator:
     def _parse_text_analysis(self, text: str) -> Dict:
         """Parse text analysis into structured format when, JSON parsing fails """
         return {
-            "main_subject": "profesional scene",
-            "people": ["person", "profesional"],
+            "main_subject": "professional scene",
+            "people": ["person", "professional"],
             "objects": ["business items"],
-            "setting": "modern enviroment",
-            "mood": "profesional",
+            "setting": "modern environment",
+            "mood": "professional",
             "colors": ["blue", "white", "gray"],
-            "style": "contemporarty",
+            "style": "contemporary",
             "cultural_context": "arab business setting"
         }
 
@@ -348,7 +348,7 @@ class ArabStockMetadataGenerator:
             f"Professional {main_subject} in Modern Arab {setting}",
             f"Middle Eastern {main_subject} - Business Excellence",
             f"Contemporary Arab {main_subject} in {setting}",
-            f"Guld Business - {main_subject} Success Story",
+            f"Gulf Business - {main_subject} Success Story",
             f"Islamic Culture - Modern {main_subject}",
             f"Arab Professional {main_subject} Meeting",
             f"Dubai Style {main_subject} in {setting}",
@@ -487,5 +487,118 @@ class ArabStockMetadataGenerator:
         else:
             return "commercial"
 
+# Enhanced API Endpoints with AI Provider Selection
 
+@app.route('/api/providers', methods=['GET'])
+def get_available_providers():
+    """Get list of available AI roviders"""
+    generator = ArabStockMetadataGenerator
 
+    providers_info = []
+
+    for provider in generator.available_providers:
+        provider_info = {
+            "name": provider.value,
+            "display_name": provider.value.title(),
+            "current": provider == generator.current_ai_config.provider,
+            "requires_api_key": provider != AIProvider.OFFLINE
+        }
+
+        if provider == AIProvider.OPENAI:
+            provider_info["models"] = ["gpt-4-vision-preview", "gpt-4o", "gpt-4-turbo"]
+            provider_info["description"] = "OpenAI GPT-4 Vision - Most accurate analysis"
+        elif provider == AIProvider.GEMINI:
+            provider_info["models"] = ["gemini-pro-vision", "gemini-1.5-pro"]
+            provider_info["description"] = ["Google Gemini - Fast and reliable"]
+        else:
+            provider_info["models"] = ["offline"]
+            provider_info["description"] = ["Offline mode - Basic analysis without API"]
+
+        providers_info.append(provider_info)
+
+    return jsonify({
+        "providers": providers_info,
+        "current_provider": generator.current_ai_config.provider.value
+    })
+
+@app.route('/api/providers/set', methods=['POST'])
+def set_ai_provider():
+    """Set the current AI provider"""
+    try:
+        data = request.json
+        provider = data.get('provider')
+        api_key = data.get('api_key')
+        model = data.get('model')
+
+        if not provider:
+            return jsonify({"error": "Provider name is required"}), 400
+
+        generator = ArabStockMetadataGenerator()
+        success = generator.set_ai_provider(provider, api_key, model)
+
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"Successfully switched to {provider}",
+                "current_provider": generator.current_ai_config.provider.value,
+                "model": generator.current_ai_config.model
+            }), 400
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_image():
+    """Main endpoint to analyze image and generate metadata with selected AI provider"""
+
+    try:
+        data = request.json
+        image_data = data.get('image') # Base64 encoded image
+
+        if not image_data:
+            return jsonify({"error": "No image data provided"}), 400
+
+        generator = ArabStockMetadataGenerator()
+
+        # Analyze image with selected AI provider
+        analysis = generator.analyze_image_with_ai(image_data)
+
+        # Generate metadata based on analysis
+        titles = generator.generate_titles(analysis)
+        keywords = generator.generate_keywords(analysis)
+        category = generator.suggest_category(analysis)
+        license_type = generator.determine_license_type(analysis)
+
+        response = {
+            "status": "success",
+            "metadata": {
+                "titles": titles,
+                "keywords": keywords,
+                "category": {
+                    "en": category[0],
+                    "ar": category[1]
+                },
+                "license": license_type,
+                "analysis": analysis
+            },
+            "ai_provider": generator.current_ai_config.provider.value,
+            "model_used": generator.current_ai_config.model
+        }
+
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/test-provider', methods=['POST'])
+def test_provider():
+    """Test AI provider connection"""
+    try:
+        data = request.json
+        provider = data.get('provider')
+        api_key = data.get('api_key')
+
+        if not provider:
+            return jsonify({"error": "Provider name is required"}), 400
+
+        generator = ArabStockMetadataGenerator()
