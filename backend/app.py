@@ -610,11 +610,12 @@ def test_provider():
             success = generator._test_openai_connection()
         elif provider.lower() == "gemini":
             if api_key:
-                genai.configure((api_key=api_key))
+                genai.configure(api_key=api_key)
             success = generator._test_gemini_connection()
         else:
             success = True # Offline mode always works
 
+    except Exception as e:
         return jsonify({
             "status": "success" if success else "error",
             "message": f"{provider} connection {'successfully' if success else 'failed'}",
@@ -675,3 +676,90 @@ def suggest_more_keywords():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/optimize', methods=['POST'])
+def optimize_metadata():
+    """Optimize existing metadata for better performance"""
+
+    try:
+        data = request.json
+        title = data.get('title', '')
+        keywords = data.get('keywords', [])
+        language = data.get('language', 'en')
+
+        generator = ArabStockMetadataGenerator()
+
+        # Optimize title
+        optimized_title = title
+        if language == 'en' and not any(word in title.lower() for word in ['arab', 'middle', 'gulf']):
+            optimized_title = f"Arab {title}"
+        elif language == 'ar' and 'عربي' not in title:
+            optimized_title = f"عربي {title}"
+
+        # Add high-performing keywords
+        trending = generator.trending_keywords[language]
+        optimized_keywords = keywords + random.sample(trending, 3)
+        optimized_keywords = list(set(optimized_keywords)) # Remove duplicates
+
+        return jsonify({
+            "optimized_title": optimized_title,
+            "optimized_keywords": optimized_keywords[:30],
+            "improvements": [
+                "Added regional keywords for better discoverability",
+                "Optimized title for Arab market",
+                "Remove duplicate keywords"
+            ]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    generator = ArabStockMetadataGenerator()
+
+    return jsonify({
+        "status": "healthy",
+        "service": "Arab Stock Metadata Generator",
+        "current_provider": generator.current_ai_config.provider.value,
+        "available_providers": [p.value for p in generator.available_providers],
+        "model": generator.current_ai_config.model
+    })
+
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Get current configuration"""
+    generator = ArabStockMetadataGenerator()
+
+    return jsonify({
+        "current_provider": generator.current_ai_config.provider.value,
+        "model": generator.current_ai_config.model,
+        "available_providers": [p.value for p in generator.available_providers],
+        "has_openai_key": bool(os.getenv('OPENAI_API_KEY')),
+        "has_gemini_key": bool(os.getenv('GEMINI_API_KEY')or os.getenv('GOOGLE_API_KEY'))
+    })
+
+if __name__ == '__main__':
+    print('🚀 Arab Stock AI Metadata Generator Starting...')
+    print('💻 Server will run on http://localhost:5000')
+    print('\n AI provider Setup:')
+    print('     - Set OPENAI_API_KEY environment variable for Open AI')
+    print('     - Set GEMINII_API_KEY environment variable for GEMINI AI')
+    print('     - Offline mode available without API keys')
+    print('\n📝 API Endpoints:')
+    print('     GET /api/providers - list available AI provider')
+    print('     POST /api/providers/set - Set current AI provider')
+    print('     POST /api/test-provider - Test provider connection')
+    print('     POST /api/analyze - Analyze image and generate metadata')
+    print('     POST /api/translate - Translate text')
+    print('     POST /api/keywords/suggest - Get keyword suggestions')
+    print('     POST /api/optimize - Optimize existing metadata')
+    print('     GET /health - Health check')
+    print('     GET /api/config - Get current configuration')
+
+    # Initialize generator to check available providers
+    generator = ArabStockMetadataGenerator()
+    print(f"\n✅ Available AI Providers: {[p.value for p in generator.available_providers]}")
+    print(f"⚡ Current Provider: {generator.current_ai_config.provider.value}")
+
+    app.run(debug=True, port=5000)
