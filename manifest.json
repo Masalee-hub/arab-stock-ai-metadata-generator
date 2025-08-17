@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Arab Stock AI Keyword - Title + Keyword Generator",
+  "name": "Arabs Stock AI Keyword - Title + Keyword Generator",
   "version": "0.0.1",
   "description": "AI-powered metadata generator for Arab Stock contributor. Generate optimized titles and keywords in Arabic and English.",
   "permissions": [
@@ -27,7 +27,29 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Arabs Stock AI Keywords",
-    "default_icon":
-  }
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "inject.js",
+        "styles.css"
+      ],
+      "matches": [
+        "*://contributor.arabsstock.com/*"
+      ]
+    }
+  ]
 
 }
