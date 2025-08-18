@@ -175,5 +175,132 @@ class ArabsStockHelper {
         return panel;                    
     }
 
-    addEventListener(panel) {}
+    addEventListener(panel) {
+        // File input change
+        const fileInput = panel.querySelector('#aiFileInput');
+        fileInput.addEventListener('change', (e) => this.HandleImageUpload(e));
+
+        // Drag and drop
+        const uploadArea = panel.querySelector('aiUploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.lenght > 0) {
+                this.processImage(files[0]);
+            }
+        });
+
+        // Language toggle
+        const langButtons = panel.querySelectorAll('.lang-btn');
+        langButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchLanguage(e.target.dataset.lang));
+        });
+    }
+
+    observeFormFields() {
+        // Monitor changes in the original form fields
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutations) => {
+                if (mutations.type === 'childList') {
+                    // Check if new form fields were added
+                    this.detectFormFields();
+                }
+            });
+        });
+
+        observer.observe(documetn.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    detectFormFields() {
+        // Try to finds Arabs stock form fields
+        this.formFields = {
+            titleEn: this.findField(['title', 'name', 'title_en']),
+            titleAr: this.findField(['title_ar', 'arabic_title', 'عنوان']),
+            keywordsEn: this.findField(['keywords', 'tags', 'keywords_en']),
+            keywordsAr: this.findField(['keywords_ar', 'arabic_keywords', 'tags_ar']),
+            category: this.findField(['category', 'فئة']),
+            license: this.findField(['license', 'license_type', 'رخصة'])
+        };
+    }
+
+    findField(possibleNames) {
+        for (const name of possibleNames) {
+            // Try by name attribute
+            let field = document.querySelector(`input[name*="${name}"], textarea[name*="${name}"], select[name*="${name}"]`);
+            if (field) return field;
+
+            // Try by id
+            field = document.querySelector(`input[id*="${name}"], textarea[id*="${name}"], select[id*="${name}"]`);
+            if (field) return field;
+
+            // Try by placeholder
+            field = document.querySelector(`input[placeholder*="${name}"], textarea[placeholder*="${name}"]`);
+            if (field) return field;
+        }
+        return null;
+    }
+
+    async HandleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            await this.processImage(file);
+        }
+    }
+
+    async processImage(file) {
+        if (this.isProcessing) return;
+
+        try {
+            this.isProcessing = true;
+            this.showLoading(true);
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('aiPreviewImage');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Convert to base64 for API
+            const base64 = await this.fileToBase64(file);
+            this.currentImageData = base64;
+
+            // Call Python API
+            const response = await fetch(`${this.apiUrl}/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'applications/json',
+                },
+                body: JSON.stringify({
+                    image: base64.split(',')[1] // Remove data URL prefix
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.displayMetadata(data.metadata);
+
+        } catch (error) {
+            console.error('Error processing image:', error);
+            this.showError('Failed to analyze image. Please try again!');
+        } finally {
+            this.isProcessing = false;
+            this.showLoading = false;
+        }
+    }
+
+    fileToBase64(fiile) {}
 }
