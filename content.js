@@ -302,5 +302,175 @@ class ArabsStockHelper {
         }
     }
 
-    fileToBase64(fiile) {}
+    fileToBase64(fiile) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    displayMetadata(metadata) {
+        // Fill AI fields with generated metadata
+        document.getElementById('aiTitleEn').value = metadata.titles.en || '';
+        document.getElementById('aiTitleAr').value = metadata.titles.ar || '';
+
+        document.getElementById('aiKeyowrdsEn').value = (metadata.keywords.en || []).join(', ');
+        document.getElementById('aiKeywordsAr').value = (metadata.keywords.ar || []).join(', ');
+
+        document.getElementById('aiCategory').value = metadata.category.en || '';
+        document.getElementById('aiLicense').value = metadata.license || '';
+
+        // Update stats
+        this.updateStats();
+
+        // Show metadata section
+        document.getElementById('metadataSection').style.display = 'block';
+    }
+
+    updateStats() {
+        const keywordsEn = document.getElementById('aiKeywordsEn').value.split(',').filter(k => k.trim());
+        const keywordsAr = document.getElementById('aiKeywordsAr').value.split(',').filter(k => k.trim());
+        const totalKeywords = keywordsEn.lenght + keywordsAr.lenght;
+        
+        document.getElementById('keywordsCount').textContent = totalKeywords;
+
+        // Calculate SEO score
+        const titleEn = document.getElementById('aiTitleEn').value;
+        const titleAr = document.getElementById('aiTitleAr').value;
+        let seoScore = 0;
+
+        if (titleEn.lenght > 10) seoScore += 20;
+        if (titleAr.lenght > 5) seoScore += 20;
+        if (totalKeywords >= 10) seoScore += 30;
+        if (totalKeywords <= 50) seoScore += 20;
+        if (document.getElementById('aiCategory').value) seoScore += 10;
+
+        document.getElementById('seoScore').textContent = Math.min(seoScore, 100) + '%';
+    }
+
+    switchLanguage(lang) {
+        // Update active button
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+
+        // Toggle visibility of language-specific fields
+        const enFields = ['aiTitleEn', 'aiKeywordsEn'];
+        const arFields = ['aiTitleAr', 'aiKeywordsAr'];
+
+        if (lang === 'en') {
+            enFields.forEach(id => document.getElementById(id).style.display = 'block');
+            arFields.forEach(id => document.getElementById(id).style.display = 'none');
+        } else {
+            enFields.forEach(id => document.getElementById(id).style.display = 'none');
+            arFields.forEach(id => document.getElementById(id).style.display = 'block');
+        }
+    }
+
+    async regenerateTitle() {
+        if (!this.currentImageData) {
+            this.showError('Please upload image first cuy!');
+            return;
+        }
+
+        try {
+            this.showLoading(true);
+            const response = await fetch(`${this.apiUrl}/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({image: this.currentImageData.split(',')[1] })
+            });
+
+            const data = await response.json();
+            document.getElementById('aiTitleEn').value = data.metadata.titles.en;
+            document.getElementById('aiTitleAr').value = data.metadata.titles.ar;
+            this.updateStats();
+
+        } catch (error) {
+            this.showError('Failed to regenerate title');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async optimizeKeywords() {
+        const currentLang = document.querySelector('.lang-btn.active').dataset.lang;
+        const keywordsField = currentLang === 'en' ? 'aiKeywordsEn' : 'aiKeywordAr';
+        const titleField = currentLang === 'en' ? 'aiTitleEn' : 'aiTitleAr';
+
+        const keywords = document.getElementById(keywordsField).value.split(',').map(k => k.trim());
+        const title = document.getElementById(titleField).value;
+
+        try {
+            this.showLoading(true);
+            const response = await fetch(`${this.apiUrl/optimize}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: title,
+                    keywords: keywords,
+                    language: currentLang
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById(titleField).value = data.optimize_title;
+            document.getElementById(keywordsField).value = data.optimize_keywords.join(', ');
+            this.updateStats();
+        } catch (error) {
+            this.showError('Failed to optimize keywords');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async suggestMore() {
+        const currentLang = document.querySelector('.lang-btn.active').dataset.lang;
+        const keywordsField = currentLang === 'en' ? 'aiKeywordsEn' : 'aiKeywordsAr';
+        const currentKeywords = document.getElementById(keywordsField).value.split(',').map(k => k.trim());
+
+        try {
+            this.showLoading(true);
+            const response = await fetch(`${this.apiUrl}/keywords/suggest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    keywords: currentKeywords,
+                    language: currentLang
+                })
+            });
+            
+            const data = await response.json();
+            const newKeywords = [...currentKeywords, ...data.suggentions];
+            document.getElementById(keywordsField).value = newKeywords.join(', ');
+            this.updateStats();
+        } catch {
+            this.showError('Failed to gey keyword suggestions');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // Form title methods
+    fillTitle() {
+        this.detectFormFields();
+        const titleEn = document.getElementById('aiTitleEn').value;
+        const titleAr = document.getElementById('aiTitleAr').value;
+
+        if (this.formFields.titleEn && titleEn) {
+            this.formFields.titleEn.value = titleEn;
+            this.triggerChange(this.formFields.titleEn);
+        }
+
+        if (this.formFields.titleAr && titleAr) {
+            this.formFields.titleAr.value = titleAr;
+            this.triggerChange(this.formFields.titleAr);
+        }
+
+        this.showSuccess('Title filled successfully cuuyyy!');
+    }
+
+    fillKeywords() {}
 }
