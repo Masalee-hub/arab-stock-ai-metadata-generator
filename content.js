@@ -472,5 +472,161 @@ class ArabsStockHelper {
         this.showSuccess('Title filled successfully cuuyyy!');
     }
 
-    fillKeywords() {}
+    fillKeywords() {
+        this.detectFormFields();
+        const keywordsEn = document.getElementById('aiKeywordsEn').value;
+        const keywordsAr = document.getElementById('aiKeywordsAr').value;
+
+        if (this.formFields.keywordsEn && keywordsEn) {
+            this.formFields.keywordsEn.value = keywordsEn;
+            this.triggerChange(this.formFields.keywordsEn);
+        }
+
+        if (this.formFields.keywordsAr && keywordsAr) {
+            this.formFields.keywordsAr.value = keywordsAr;
+            this.triggerChange(this.formFields.keywordsAr) 
+        }
+
+        this.showSuccess('Keywords filled successfully!');
+    }
+
+    fillCategory() {
+        this.detectFormFields();
+        const category = document.getElementById('aiCategory').value;
+        
+        if (this.formFields.category && category) {
+            // Try to find matching option in the form's category field
+            const options = this.formFields.category.querySelectorAll('option');
+            for (const option of options) {
+                if (option.value.toLowerCase().includes(category.toLowerCase()) ||
+                    option.textContent.toLowerCase().includes(category.toLowerCase())) {
+                    this.formFields.category.value = option.value;
+                    this.triggerChange(this.formFields.category);
+                    break;
+                }
+            }
+        }
+        
+        this.showSuccess('Category filled successfully!');
+    }
+
+    fillLicense() {
+                this.detectFormFields();
+        const license = document.getElementById('aiLicense').value;
+        
+        if (this.formFields.license && license) {
+            // Try to find matching option
+            const options = this.formFields.license.querySelectorAll('option');
+            for (const option of options) {
+                if (option.value.toLowerCase().includes(license.toLowerCase()) ||
+                    option.textContent.toLowerCase().includes(license.toLowerCase())) {
+                    this.formFields.license.value = option.value;
+                    this.triggerChange(this.formFields.license);
+                    break;
+                }
+            }
+        }
+        
+        this.showSuccess('License filled successfully!');
+    }
+
+    fillAllFields () {
+        this.fillTitle();
+        this.fillKeywords();
+        this.fillCategory();
+        this.fillLicense();
+        this.showSuccess('All fields filled successfully!');
+    }
+
+    async reanalyze() {
+        if (this.currentImageData) {
+            await this.processImage(this.dataURLToFile(this.currentImageData));
+        } else {
+            this.showError('No Image to reanalyze');
+        }
+    }
+
+    // Utility Methods
+    triggerChange(element) {
+        const event = new Event('change', { bubbles: true });
+        element.dispatchEvent(event);
+
+        // Also trigger input event for React-style forms
+        const inputEvent = new Event('input', { bubbles: true });
+        element.dispatchEvent(inputEvent);
+    }
+
+    dataURLToFile(dataURL) {
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], 'image.jpg', { type: mime });
+    }
+
+    showLoading(show) {
+        const loadingSection = document.getElementById('loadingSection');
+        const metadataSection = document.getElementById('metadataSection');
+
+        if (show) {
+            loadingSection.style.display = 'block';
+            metadataSection.style.display = 'none';
+        } else {
+            loadingSection.style.display = 'none';
+            if (this.currentImageData) {
+                metadataSection.style.display = 'block';
+            }
+        }
+    }
+
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+
+    showNotification(message, type) {
+        // Create Notification
+        const notification = document.createElement('div');
+        notification.className = `ai-notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${type === 'success' ? '#28a745' : '#dc3545'};
+            color: white;
+            border-radius: 8px;
+            z-index: 10001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+
+        document.body.appendChild(notification);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
 }
+
+// Initialize the extension when page loads
+let arabsStockHelper;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        arabsStockHelper = new ArabsStockHelper();
+    });
+} else {
+    arabsStockHelper = new ArabsStockHelper(); 
+}
+
+// Make helper available globally for button onclick handlers
+window.arabsStockHelper = arabsStockHelper;
