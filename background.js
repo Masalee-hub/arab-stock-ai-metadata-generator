@@ -371,8 +371,74 @@ class ArabsStockBackground {
 
         
     updateStats(newStats) {
-        if (newStats.imagesProcessed) {}
+        if (newStats.imagesProcessed) {
+            this.stats.imagesProcessed += newStats.imagesProcessed;
+        }
+        if (newStats.keywordsGenerated) {
+            this.stats.keywordsGenerated += newStats.keywordsGenerated;
+        }
+
+        this.stats.lastActive = Date.now();
+        this.saveStats();
     }
 
+    loadStats() {
+        chrome.storage.sync.get(['imagesProcessed', 'keywordsGenerated', 'lastActive'], (result) => {
+            this.stats = {
+                imagesProcessed: result.imagesProcessed || 0,
+                keywordsGenerated: result.keywordsGenerated || 0,
+                lastActive: result.lastActive || Date.now()
+            };
+        });
+    }
 
+    saveStats () {
+        chrome.storage.sync.set({
+            imagesProcessed: this.stats.imagesProcessed,
+            keywordsGenerated: this.stats.keywordsGenerated,
+            lastActive: this.stats.lastActive
+        });
+    }
+
+    async getSettings() {
+        return new Promise((resolve) => {
+            chrome.storage.sync.get([
+                'autoFillEnabled',
+                'notificationsEnabled',
+                'arabicPriority',
+                'apiUrl'
+            ], (result) => {
+                resolve({
+                    autoFillEnabled: result.autoFillEnabled !== false,
+                    notificationsEnabled: result.notificationsEnabled !== false,
+                    arabicPriority: result.arabicPriority === true,
+                    apiUrl: result.apiUrl || this.apiUrl
+                });
+            });
+        });
+    }
+
+    showNotification(title, message, type = 'basic') {
+        chrome.storage.sync.get(['notoficationsEnabled'], (result) => {
+            if (result.notificationsEnabled !== false) {
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'icons/icon48.png',
+                    title: title,
+                    message: message
+                });
+            }
+        });
+    }
+
+    // Error handling and logging
+    handleError(error, context = '') {
+        console.error(`Arabs Stock Extension Error ${context}:`, error);
+
+        // Report error to analytics if implemented
+        // this.reportError(error.context);
+    }
 }
+
+// Initialize background script
+const arabsStockBackground = new ArabsStockBackground();
