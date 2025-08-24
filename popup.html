@@ -304,8 +304,250 @@
                 <span class="stat-number" id="imagesProcessed">0</span>
                 <span class="stat-label">Images Processed</span>
             </div>
-            <div class="stat-card"></div>
+            <div class="stat-card">
+                <span class="stat-number" id="keywordsGenerated">0</span>
+                <span class="stat-label">Keywords Generated</span>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <h3>Quick Actions</h3>
+            <button class="quick-actions-btn" onclick="openArabsStock()">🔑 Open Arabs Stock</button>
+            <button class="quick-actions-btn" onclick="startPythonServer()">Start Python Server</button>
+            <button class="quick-actions-btn" onclick="testConnection()">Test Connection</button>
+            <button class="quick-actions-btn" onclick="clearData()">Clear Data</button>
+        </div>
+
+        <div class="feature-list">
+            <li>AI-generated title in Arabic & English</li>
+            <li>Smart keyword suggestions</li>
+            <li>Automatic category detection</li>
+            <li>License type recomendation</li>
+            <li>SEO optimization for Arab Market</li>
+            <li>Bilingual metadata support</li>
+        </div>
+
+        <div class="action-buttons">
+            <button class="popup-btn primary" onclick="activateExtension()">
+                Activate Extension
+            </button>
+            <button class="popup-btn" onclick="openSettings()">
+                Setting
+            </button>
+            <button class="popup-btn" onclick="openHelp()">
+                Help & Guide
+            </button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-item">
+                <span>Auto-fill forms</span>
+                <label class="switch">
+                    <input type="checkbox" id="autoFillToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span>Show notifications</span>
+                <label class="switch">
+                    <input type="checkbox" id="notificationsToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="settings-item">
+                <span>Arabic priority</span>
+                <label class="switch">
+                    <input type="checkbox" id="arabicPriorityToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </div>
+
+    <div class="version-info">
+        Arabs Stock AI keyword v0.0.1<br>
+        <small>Powered by Claude.ai and Masalee Dev</small>
+    </div>
+
+    <script>
+        // Popup functionality
+        let stats = {
+            imagesProcessed: 0,
+            keywordGenerated: 0
+        };
+
+        let availableProviders = [];
+        let currentProvider = 'offline';
+
+        // Initialize popup
+        document.addEventListener('DOMContentLoaded', function() {
+           loadSettings();
+           checkConnectionStatus();
+           loadAvailableProviders();
+           updateStats(); 
+        });
+
+        async function loadAvailableProviders() {
+            try {
+                const response = await fetch('http://localhost:5000/api/providers');
+                if (response.ok) {
+                    const data = await response.json();
+                    availableProviders = data.providers;
+                    currentProvider = data.current_provider;
+
+                    populateProviderSelect();
+                } else {
+                    console.log('Failed to load providers');
+                }
+            } catch (error) {
+                console.log('Server offline, using offline mode');
+                setOfflineMode();
+            }
+        }
+
+        function populateProviderSelect() {
+            const select = document.getElementById('aiProviderSelect');
+            select.innerHTML ='';
+
+            availableProviders.forEach(provider => {
+                const option = document.createElement('option');
+                option.value = provider.name;
+                option.textContent = `${provider.display_name} - ${provider.description}`;
+                if (provider.current) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            // Add event listener for provider selection
+            select.addEventListener('change', handleProviderChange);
+
+            // Trigger initial change to show/hide API key section
+            handleProviderChange();
+        }
+
+        function handleProviderChange() {
+            const select = document.getElementById('aiProviderSelect');
+            const apiKeySection = document.getElementById('apiKeySection');
+            const selectedProvider = availableProviders.find(p => p.name === select.value);
+
+            if (selectedProvider && selectedProvider.requires_api_key) {
+                apiKeySection.style.display = 'block';
+                document.getElementById('apiKeyInput').placeholder = `Enter ${selectedProvider.display_name} API Key...`;
+            } else {
+                apiKeySection.style.display = 'none';
+            }
+        }
+
+        async function setProvider() {
+            const select = document.getElementById('aiProviderSelect');
+            const apiKeyInput = document.getElementById('aiKeyInput');
+            const selectedProvider = select.value;
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!selectedProvider) {
+                showNotification('Please select a provider', 'error');
+                return;
+            }
+
+            const selectedProviderInfo = availableProviders.find(p => p.name === selectedProvider);
+            if (selectedProviderInfo.requires_api_key && !apiKey) {
+                showNotification('API key is required for this provider', 'error');
+                return;
+            }
+
+            try {
+                showNotification('Setting AI Provider...');
+
+                const response = await fetch('http://localhost:5000/api/providers/set', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: selectedProvider,
+                        api_key: apiKey,
+                        model: selectedProviderInfo.models[0] // Use default model
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    showNotification(`Successfully switched to ${selectedProvider}`);
+                    currentProvider = selectedProvider;
+
+                    // Save API key securely
+                    if (apiKey) {
+                        chrome.storage.sync.set({ [`${selectedProvider}_api_key`]: apiKey});
+                    }
+
+                    // Clear API key input for security
+                    apiKeyInput.value = '';
+
+                    // Refresh connection status
+                    checkConnectionStatus();
+                } else {
+                    showNotification(result.message || 'Failed to set provider', 'error');
+                }
+            } catch (error) {
+                showNotification('Error setting provider: ' + error.message, 'error');
+            }
+        }
+
+        async function testProvider() {
+            const select = document.getElementById('aiProviderSelect');
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const selectedProvider = select.value;
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!selectedProvider) {
+                showNotification('Please select a provider', 'error');
+                return;
+            }
+
+            try {
+                showNotification('Testing provider connection...');
+
+                const response = await fetch('http:localhost:5000/api/test-provider', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: selectedProvider,
+                        api_key: apiKey
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showNotification(`${selectedProvider} connection successful!`);
+                } else {
+                    showNotification(`${selectedProvider} connection failed : ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('Test failed: ' + error.message, 'error');
+            }
+        }
+
+        function setOfflineMode() {
+            const select = document.getElementById('aiProviderSelect');
+            select.innerHTML = '<option value="offline">Offline Mode - Basic Analysis</option>';
+            document.getElementById('apiKeySection').style.display = 'none';
+            currentProvider = 'offline';
+        }
+
+        async function checkConnectionStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    setConnectionStatus(true, `Connected via ${data.current_provider.toUpperCase()}`);
+                } else {
+                    setConnectionStatus(false, 'Server error');
+                }
+            } catch (error) {
+                setConnectionStatus(false, 'Pyhton server offline');
+            }
+        }
+    </script>
 </body>
 </html>
