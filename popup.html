@@ -548,6 +548,128 @@
                 setConnectionStatus(false, 'Pyhton server offline');
             }
         }
+
+        function setConnectionStatus(connected, message) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            statusDot.className = `status-indicator ${connected ? 'active' : 'inactive'}`;
+            statusText.textContent = message;
+        }
+
+        function loadSettings() {
+            chrome.storage.sync.get([
+                'autoFillEnabled',
+                'notificationsEnabled',
+                'arabicPriority',
+                'imagesProcessed',
+                'keywordsGenerated'
+            ], function (result) {
+                document.getElementById('autoFillToggle').checked = result.autoFillEnabled !== false;
+                document.getElementById('notificationsToggle').checked = result.notificatiosEnabled !== false;
+                document.getElementById('arabicPriorityToggle').checked = result.arabicPriority === true;
+
+                stats.imagesProcessed = result.imagesProcessed || 0;
+                stats.keywordGenerated = result.keywordGenerated || 0;
+                updateStats();
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('imagesProcessed').textContent = stats.imagesProcessed;
+            document.getElementById('keywordsGenerated').textContent = stats.keywordGenerated;
+        }
+
+        function saveSettings() {
+            const settings = {
+                autoFillEnabled: document.getElementById('autoFillToggle').checked,
+                notificatiosEnabled: document.getElementById('notificationsToggle').checked,
+                arabicPriority: document.getElementById('arabicPriorityToggle').checked,
+                imagesProcessed: stats.imagesProcessed,
+                keywordGenerated: stats.keywordGenerated
+            };
+
+            chrome.storage.sync.set(settings);
+        }
+
+        // Event listeners for settings
+        document.getElementById('autoFillToggle'),addEventListener('change', saveSettings);
+        document.getElementById('notificationsToggle').addEventListener('change', saveSettings);
+        document.getElementById('arabicPriorityToggle').addEventListener('change', saveSettings);
+
+        // Action functions
+        function openArabsStock() {
+            chrome.tabs.create({ url: 'https://contributor.arabsstock.com/en/warehouse?type=Images' });
+            showNotification('Opening Arabs stock contributor dashboard....');
+        }
+
+        function startPythonServer() {
+            showNotification('Please run: python app.py in your extension folder');
+        }
+
+        async function testConnection() {
+            showNotification('Testing connection...');
+            await checkConnectionStatus();
+        }
+
+        function clearData(){
+            if(confirm('Clear all extension data?')) {
+                chrome.storage.sync.clear(() => {
+                    stats = { imagesProcessed: 0, keywordGenerated: 0 };
+                    updateStats();
+                    showNotification('Data cleared successfully');
+                });
+            }
+        }
+
+        function activateExtension() {
+            chrome.tabs.query({ active: true, currentWindow: true}, function(tabs) {
+                const currentTab = tab[0];
+
+                if (currentTab.url.includes('arabsstock.com')) {
+                    chrome.tabs.sendMessage(currentTabb.id, { action: 'activate' });
+                    showNotification('Extension activated on Arabs Stock!');
+                    window.close();
+                } else {
+                    showNotification('Please navigaate to Arabs Stock first!');
+                    openArabsStock();
+                }
+            });
+        }
+
+        function openSettings() {
+            chrome.tabs.create({ url: chrome.runtime.getURL('setting.html') });
+        }
+
+        function openHelp() {
+            chrome.tabs.create({ url: chrome.runtime.getURL('help.html') });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            notification.style.background = type === 'error' ? '#dc3545' : '#28a745';
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Listen for message from content script
+        chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+            if (request.action === 'updateStats') {
+                stats.imagesProcessed += request.imagesProcessed || 0;
+                stats.keywordGenerated += request.keywordGenerated || 0;
+                updateStats();
+                saveSettings();
+            }
+        });
+
+        // Auto-refresh connection status
+        setInterval(checkConnectionStatus, 30000); // Check every 30 seconds
     </script>
 </body>
 </html>
