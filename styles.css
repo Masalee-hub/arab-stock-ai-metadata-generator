@@ -103,3 +103,141 @@
 }
 
 /* Language toggle */
+.language-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 5px;
+}
+
+.lang-btn {
+    padding: 8px 20px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.lang-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+}
+
+.lang-btn.active {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-color: transparent;
+}
+
+/* Form fields */
+.field-group {
+    margin-bottom: 20px;
+}
+
+.field-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-size: 1em;
+}
+
+.ai-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    font-size: 0.95em;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.ai-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.ai-input::placeholder {
+    color: #999;
+}
+
+/* arabic input styling */
+.ai-input[placeholder*="العربية"],
+.ai-input[placeholder*="عربية"] {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Tahoma', 'Arial Unicode MS', sans-serif;
+}
+
+/* Button styles */
+.ai-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+}
+
+.ai-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.ai-btn.small {
+    padding: 6px 12px;
+    font-size: 0.8em;
+}
+
+.ai-btn.primary {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    font-size: 1em;
+    padding: 12px 20px;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+/* Stats sections */
+.stats-section {
+    background: #f8f9ff;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+    min-width: 100px;
+}
