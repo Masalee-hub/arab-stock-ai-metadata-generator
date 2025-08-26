@@ -29,6 +29,8 @@ Create a folder for the extension and add these files:
 
 ### 2.Set Up Python Environment
 # Create virtual environment (recommended)
+```bash
+# Create virtual environment (recomended)
 python -m venv arabs-stock-env
 
 # Activate environment
@@ -38,4 +40,7 @@ arabs-stock-env\Scripts\activate
 source arabs-stock-env/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requitments.txt
+```
+
+### 3.Configure AI Providers (Choose Your Preferred Option)
