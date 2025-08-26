@@ -28,7 +28,7 @@ Create a folder for the extension and add these files:
 - `requitments.txt` - Python dependecies
 
 ### 2.Set Up Python Environment
-# Create virtual environment (recommended)
+
 ```bash
 # Create virtual environment (recomended)
 python -m venv arabs-stock-env
