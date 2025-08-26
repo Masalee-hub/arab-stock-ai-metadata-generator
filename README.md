@@ -26,3 +26,16 @@ Create a folder for the extension and add these files:
 - `popup.html` - Extension popup
 - `styles.css` - Styles
 - `requitments.txt` - Python dependecies
+
+### 2.Set Up Python Environment
+# Create virtual environment (recommended)
+python -m venv arabs-stock-env
+
+# Activate environment
+# Windows:
+arabs-stock-env\Scripts\activate
+# macOS/Linux:
+source arabs-stock-env/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
