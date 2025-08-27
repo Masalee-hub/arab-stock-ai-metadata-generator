@@ -25,7 +25,7 @@ Create a folder for the extension and add these files:
 - `background.js` - Background script
 - `popup.html` - Extension popup
 - `styles.css` - Styles
-- `requitments.txt` - Python dependecies
+- `requirements.txt` - Python dependecies
 
 ### 2.Set Up Python Environment
 
@@ -40,7 +40,7 @@ arabs-stock-env\Scripts\activate
 source arabs-stock-env/bin/activate
 
 # Install dependencies
-pip install -r requitments.txt
+pip install -r requirements.txt
 ```
 
 ### 3.Configure AI Providers (Choose Your Preferred Option)
@@ -69,7 +69,7 @@ export GEMINI_API_KEY="your-gemini-api-key-here"
 
 **Option C: Offline Mode (No API key Required)**
 - Works without any API keys
-- Provides bbbasic image analysis
+- Provides basic image analysis
 - Good for testing and basic metadata generation
 
 ### 4.Start Python Server
@@ -140,7 +140,7 @@ curl http://localhost:5000/health
 
 # Common fixes:
 pip install --upgrade pip
-pip install -r requitments.txt --force-reinstall
+pip install -r requirements.txt --force-reinstall
 ```
 
 ### Extension Issues
