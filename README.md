@@ -105,5 +105,65 @@ You should see:
 
 ### Basic Workflow
 1. **Open Arabs Stock** contributor panel
-2. 
+2. **Upload/edit** an image
+3. **Extension appears** automatically on the page
+4. **Drag/drop image** to AI analysis area
+5. **Review generated** titles and keywords
+6. **Click "Fill All Fields"** to auto-populate form
+7. **Submit** your optimized content!
+
+### AI Provider Selection
+- Use the popup to switch 
+- Real-time translation available
+- Keywords optimized for Arab markets
+
+
+## ⚙ Configuration Options
+
+### Extension Setting (Popup)
+- **Auto-fill forms**: Automically fill detected form fields
+- **Show notification**: Display success/error messages
+- **Arabic priority**: Prioritize Arabic content generation
+
+### AI Provider Settings
+- **Provider Selection**: Choose between OpenAI, Gemini, or Offline
+- **Model Selection**: Different models for different providers
+- **API Key Management**: Secure key storage
+
+
+## 💯 Troubleshooting
+
+### Python Server Issues
+```bash
+# Check if server is running
+curl http://localhost:5000/health
+
+# Common fixes:
+pip install --upgrade pip
+pip install -r requitments.txt --force-reinstall
+```
+
+### Extension Issues
+- Check Developer Console (F12) for errors
+- Reload extension in chrome://extensions/
+- Verify Arabs Stock page is loaded
+
+### API Key Issues
+- Ensure extension has access to contributor.arabsstock.com
+- Check if popup blocker is disabled
+- Verify extension is enabled
+
+
+## 📊 API Endpoints Reference
+
+| **Endpoint** | **Method** | **Description** |
+| :----------- | :--------- | :-------------- |
+| `/health` | GET | Check server status |
+| `/api/providers` | GET | List available AI providers |
+| `/api/providers/set` | POST | Set current AI provider |
+| `/api/tes-provider` | POST | Test provider connection |
+| `/api/analyze` | POST | Analyze image with AI |
+| `/api/translate` | POST | Translate text |
+| `/api/optimize` | POST | Optimize metadata |
+| `/api/keywords/suggest` | POST | Get keyword suggestions |
 
