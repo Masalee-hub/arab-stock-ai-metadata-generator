@@ -167,3 +167,75 @@ pip install -r requitments.txt --force-reinstall
 | `/api/optimize` | POST | Optimize metadata |
 | `/api/keywords/suggest` | POST | Get keyword suggestions |
 
+
+## 🔐 Security & Privacy
+- API keys stored locally in browser
+- Images processed temporarily (not stored)
+- No data sent to third parties except chosen AI provider
+- All communication over HTTPS
+
+## 📣 Tips for Best Results
+
+### For OpenAI:
+- GPT-4 Visions provides most accurate analysis
+- Higher cost but best cultural context understanding
+
+### For Gemini:
+- Faster processing than OpenAI
+- Good bbalance of speed and accuracy
+- More cost-effective for high volume
+
+### For Offline Mode:
+- No API costs
+- Basic but useful analysis
+- Good for testing and development
+
+### General Tips:
+- Use high-quality, well-lit images
+- Review and custoimize generated metadata
+- test different provides for your content type
+- Keep API keys secure and rotate regularly
+
+
+## 🆘 Support
+
+### Common Issues:
+1. **"Server offline"** - Restart Python server
+2. **"Invalid API key"** - Check key format and permissions
+3. **"Extension not working"** - Reload extension and Arabs Stock page
+4. **"Poor analysis quality"** - Try different AI provider or higher resolution image
+
+### Getting Help:
+- Check browser console for error messages
+- Verify Python server logs
+- Test with simple images first
+- Ensure all dependencies are installed
+
+
+## 🔄 Update & Maintenance
+
+### Updating Python Dependencies:
+```bash
+pip install -r requirements.txt --upgrade
+```
+
+### Updating Extension:
+1. Download new version files
+2. Replace old files
+3. Reload extension in browser
+
+### Backup Settings:
+- Extension settings auto-sync with chrome
+- Export/import available in extension popup
+
+
+## 🙌 Success!
+
+Once set up correctly, you should be able to: ✅ Generate AI-powered Arabic and English titles ✅ Get culturally relevant keyword suggestions ✅ Auto-fill Arabs Stock upload forms ✅ Switch bbetween AI providers seamlessly ✅ Track usage statistics ✅ Optimize metadata for Arab markets
+
+Happy contributing to Arabs Stock! 🚀
+
+### Author!
+
+LinkedIn[https://www.linkedin.com/in/haederali/]
+GitHub[https://www.github.com/Masalee-hub]
