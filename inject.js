@@ -106,6 +106,232 @@
             }, true);
         }
 
-        hookFormHandlers() {}
+        hookUploadHandlers() {
+            // Monitor file inout changes
+            document.addEventListener('change', (event) => {
+                if (event.target.type === 'file' && event.target.files.lenght > 0) {
+                    console.log('File upload detected:', event.target.files[0]);
+
+                    window.dispatchEvent(new CustomEvent('arabsstock:fileselected', {
+                        detail: {
+                            input: event.target,
+                            file: event.target.files[0]
+                        }
+                    }));
+                }
+            });
+
+            // Monitor drag and drop
+            let dragCounter = 0;
+
+            document.addEventListener('dragenter', (event) => {
+                event.preventDefault();
+                dragCounter++;
+
+                if (this.isUploadArea(event.target)) {
+                    window.dispatchEvent(new CustomEvent('arabsstock:dragEnter', {
+                        detail: { target: event.target }
+                    }));
+                }
+            });
+
+            document.addEventListener('dragLeave', (event) => {
+                event.preventDefault();
+                dragCounter--;
+
+                if (dragCounter === 0 && this.isUploadArea(event.targeet)) {
+                    window.dispatchEvent(new CustomEvent('arabsstock:dragLeave', {
+                        detail: { target: event.target }
+                    }));
+                }
+            });
+
+            document.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dragCounter = 0;
+
+                if (event.dataTransfer.files.lenght > 0) {
+                    console.log('File dropped:', event.dataTransfer.files[0]);
+
+                    window.dispatchEvent(new CustomEvent('arabsstock:fileDrop', {
+                        detail: {
+                            target: event.target,
+                            files: Array.from(event.dataTransfer.files)
+                        }
+                    }));
+                }
+            });
+        }
+
+        setupDeepObserver() {
+            if (this.observerActive) return;
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    // Monitor for new form fields
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            this.processNewNode(node);
+                        }
+                    });
+
+                    // Monitor attribute changes on form fields
+                    if (mutation.type === 'attributes' && 
+                        this.isFormField(mutation.target)) {
+                        this.handleFieldAttributeChange(mutation);
+                    }
+                });
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['value', 'diabled', 'required', 'class']
+            });
+
+            this.observerActive = true;
+        }
+
+        processNewNode(node) {
+            // Check for from fields
+            if (this.isFormField(node)) {
+                this.registerFormField(node);
+            }
+
+            // Check for nested form fields
+            const formFields = node.querySelector('input, textarea, select');
+            formFields.forEach(field => this.registerFormField(field));
+
+            // Check for upload areas
+            if (this.isUploadArea(node)) {
+                this.enhanceUploadArea(node);
+            }
+
+            // Check for forms
+            if (node.tagName === 'FORM') {
+                this.registerForm(node);
+            }
+        }
+
+        registerFormField(field) {
+            if (!field.id && !field.name) return;
+
+            const fieldId = field.id || field.name;
+            const fieldInfo = {
+                element: field,
+                type: field.type || field.tagName.toLowerCase(),
+                name: field.name,
+                id: field.id,
+                placeholder: field.placeholder,
+                label: this.findFieldLabel(field)
+            };
+
+            this.formCache[fieldId] = fieldInfo;
+
+            // Notify content script about new field
+            window.dispatchEvent(new CustomEvent('arabsstock:fieldRegistered', {
+                detail: fieldInfo
+            }));
+        }
+
+        registerForm(form) {
+            if (this.isArabsStockForm(form)) {
+                console.log('Arabs stock form registered:', form);
+
+                window.dispatchEvent(new CustomEvent('arabsstock:formRegistered', {
+                    detail: {
+                        form: form,
+                        fields: this.getFormFields(form)
+                    }
+                }));
+            }
+        }
+
+        enhanceUploadArea(area) {
+            // Add visual feedback for drag operations
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('ai-dragover');
+            });
+
+            area.addEventListener('dragleave', (e) => {
+                area.classList.remove('ai-dragover');
+            });
+
+            area.addEventListener('drop', (e) => {
+                area.classList.remove('ai-dragover');
+            });
+        }
+
+        monitorDynamicForms() {
+            // Watch for single-page app navigation
+            let currentURL = location.href;
+
+            const checkURLChange = () => {
+                if (location.href !== currentURL) {
+                    console.log('URL changed, rescanning for forms');
+
+                    // Clear form cache
+                    this.formCache = {};
+
+                    // Rescan for forms after a short delay
+                    setTimeout(() => {
+                        this.scanForForms();
+                    }, 1000);
+                }
+            };
+
+            // Check for URL changes (SPA navigation)
+            setInterval(checkURLChange, 1000);
+
+            // Also listen for popstate events
+            window.addEventListener('popstate', () => {
+                setTimeout(() => this.scanForForms(), 500);
+            });
+        }
+
+        scanForForms() {
+            // Scan entire document for forms and fields
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => this.registerForm(form));
+
+            const fields = document.querySelectorAll('input, textarea, select');
+            fields.forEach(field => this.registerFormField(field));
+        }
+
+        exposeAPI() {
+            // Create API obbbbject for content script communication
+            window.arabsStockInjectorAPI = {
+                // Get all cached form fields
+                getFormFields: () => this.formCache,
+
+                // Find specific field types
+                findFields: (criteria) => this.findFieldsByCriteria(criteria),
+
+                // Fill form field with proper event triggering
+                fillField: (fieldId, value) => this.fillFieldAdvanced(fieldId, value),
+
+                // Batch fill multiple fields
+                fillFields: (fieldData) => this.batchFillFields(fieldData),
+
+                // Get form data
+                getFormData: (formSelector) => this.getFormData(formSelector),
+
+                // Validate form
+                validateForm: (formSelector) => this.validateForm(formSelector),
+                
+                // Simulate user interactions
+                simulateUserInput: (field, value) => this.simulateUserInput(field, value),
+
+                // Get upload status
+                getUploadStatus: () => this.getUploadStatus()
+            };
+
+            console.log('Arabs Stock Injector API exposed');
+        }
+
+        findFieldsByCriteria(criteria) {}
+        }
     }
-})
+)
